@@ -3,9 +3,9 @@
 -- consulta que liste cada valor distinto e a quantidade de linhas em que ele aparece, da maior
 -- para a menor quantidade. Os valores NULL também devem aparecer.
 
-SELECT 
-COUNT(DISTINCT transaction_id) AS total_distintos_transaction_id
-FROM raw.cafe_sales;
+SELECT DISTINCT 
+item AS valor_distinto
+FROM cafe_sales;
 
 
 -- Enunciado 3 FÁCIL
@@ -31,19 +31,19 @@ FROM raw.cafe_sales;
 -- nenhuma restrição e na mesma ordem do arquivo CSV. Inicie o bloco com DROP TABLE IF
 -- EXISTS ... CASCADE.
 
-SELECT * FROM raw.cafe_sales;
+-- SELECT * FROM raw.cafe_sales;
 
-DROP TABLE IF EXISTS raw.cafe_sales CASCADE;
-CREATE TABLE raw.cafe_sales(
-	transaction_id TEXT,
-	item TEXT,
-	quantity TEXT,
-	price_per_unit TEXT,
-	total_spent TEXT,
-	payment_method TEXT,
-	location TEXT,
-	transaction_date TEXT
-);
+-- DROP TABLE IF EXISTS raw.cafe_sales CASCADE;
+-- CREATE TABLE raw.cafe_sales(
+-- 	transaction_id TEXT,
+-- 	item TEXT,
+-- 	quantity TEXT,
+-- 	price_per_unit TEXT,
+-- 	total_spent TEXT,
+-- 	payment_method TEXT,
+-- 	location TEXT,
+-- 	transaction_date TEXT
+-- );
 
 -- Enunciado 1 FÁCIL
 -- No pgAdmin, crie o banco de dados cafe_dw com codificação UTF8 (registre essa etapa

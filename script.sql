@@ -1,14 +1,24 @@
+-- Enunciado 4 FÁCIL
+-- Para cada uma das colunas item, payment_method e location da camada raw, escreva uma
+-- consulta que liste cada valor distinto e a quantidade de linhas em que ele aparece, da maior
+-- para a menor quantidade. Os valores NULL também devem aparecer.
+
+SELECT 
+COUNT(DISTINCT transaction_id) AS total_distintos_transaction_id
+FROM raw.cafe_sales;
+
+
 -- Enunciado 3 FÁCIL
 -- Importe dirty_cafe_sales.csv para raw.cafe_sales com Import/Export Data… do
 -- pgAdmin (Format csv, Encoding UTF8, Header ligado, Delimiter vírgula). Registre em
 -- comentário as opções usadas e escreva duas consultas de validação: o total de linhas (10.000
 -- esperadas) e o total de valores distintos de transaction_id
 
-SELECT COUNT(DISTINCT transaction_id) AS total_distintos_transaction_id
-FROM raw.cafe_sales;
+-- SELECT COUNT(DISTINCT transaction_id) AS total_distintos_transaction_id
+-- FROM raw.cafe_sales;
 
-SELECT COUNT (*) AS total_linhas
-FROM raw.cafe_sales;
+-- SELECT COUNT (*) AS total_linhas
+-- FROM raw.cafe_sales;
 
 -- Configurações de importação do arquivo 'dirty_cafe_sales.csv'
 -- FORMAT csv

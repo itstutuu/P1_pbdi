@@ -1,12 +1,39 @@
+-- Enunciado 5 MÉDIO
+-- Escreva uma única consulta, usando UNION ALL, que devolva uma linha para cada coluna
+-- da camada raw, exceto transaction_id, com quatro colunas: coluna (o nome da coluna,
+-- como texto), qtd_error, qtd_unknown e qtd_vazio (valor NULL ou texto vazio após TRIM).
+-- O resultado terá sete linhas.
+
+SELECT COLUNMS (item, quantity, price_per_unit, total_spent, payment_method, location, transaction_date)
+AS coluna FROM raw.cafe_sales
+UNION ALL;
+SELECT item, quantity, price_per_unit, total_spent, payment_method, location, transaction_date, 
+COUNT('ERROR') AS qtd_error FROM raw.cafe_sales
+UNION ALL
+SELECT item, quantity, price_per_unit, total_spent, payment_method, location, transaction_date, 
+COUNT('*') FROM dw.dim_customer
+UNION ALL
+SELECT ’payment’, COUNT(*) FROM dw.dim_payment;
+
 -- Enunciado 4 FÁCIL
 -- Para cada uma das colunas item, payment_method e location da camada raw, escreva uma
 -- consulta que liste cada valor distinto e a quantidade de linhas em que ele aparece, da maior
 -- para a menor quantidade. Os valores NULL também devem aparecer.
 
-SELECT DISTINCT 
-item AS valor_distinto
-FROM cafe_sales;
+SELECT DISTINCT location AS location_distintos, COUNT (location) AS contagem
+FROM raw.cafe_sales
+GROUP BY location
+ORDER BY contagem DESC;
 
+SELECT DISTINCT payment_method AS payment_method_distintos, COUNT (payment_method) AS contagem
+FROM raw.cafe_sales
+GROUP BY payment_method
+ORDER BY contagem DESC;
+
+SELECT DISTINCT item AS itens_distintos, COUNT (item) AS contagem
+FROM raw.cafe_sales
+GROUP BY item
+ORDER BY contagem DESC;
 
 -- Enunciado 3 FÁCIL
 -- Importe dirty_cafe_sales.csv para raw.cafe_sales com Import/Export Data… do

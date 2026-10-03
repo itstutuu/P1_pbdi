@@ -1,39 +1,171 @@
+-- Enunciado 6 MÉDIO
+-- Crie staging.cafe_tipada conforme a Tabela 6 e carregue-a a partir de raw.cafe_sales
+-- com um único INSERT ... SELECT, precedido de TRUNCATE. Em todas as colunas, aplique
+-- TRIM e transforme '', 'ERROR' e 'UNKNOWN' em NULL antes de qualquer conversão; converta
+-- as colunas numéricas com CAST e a data com TO_DATE no formato 'YYYY-MM-DD'. Em seguida,
+-- escreva uma consulta que conte os NULL de cada coluna da tabela tipada. Para cada coluna,
+-- o total deve ser igual à soma qtd_error + qtd_unknown + qtd_vazio obtida no Enunciado 5.
+
+SELECT 'item' AS coluna,
+COUNT(*) FILTER (WHERE item IS NULL) AS qtd_vazio
+FROM staging.cafe_tipada
+UNION ALL
+SELECT 'quantity', 
+COUNT(*) FILTER (WHERE quantity IS NULL)
+FROM staging.cafe_tipada
+UNION ALL
+SELECT 'price_per_unit',
+COUNT(*) FILTER (WHERE price_per_unit IS NULL)
+FROM staging.cafe_tipada
+UNION ALL
+SELECT 'total_spent',
+COUNT(*) FILTER (WHERE total_spent IS NULL)
+FROM staging.cafe_tipada
+UNION ALL
+SELECT 'payment_method',
+COUNT(*) FILTER (WHERE payment_method IS NULL)
+FROM staging.cafe_tipada
+UNION ALL
+SELECT 'location', 
+COUNT(*) FILTER (WHERE location IS NULL)
+FROM staging.cafe_tipada
+UNION ALL
+SELECT 'transaction_date', 
+COUNT(*) FILTER (WHERE transaction_date IS NULL)
+FROM staging.cafe_tipada;
+
+SELECT * FROM staging.cafe_tipada;
+
+TRUNCATE TABLE staging.cafe_tipada;
+INSERT INTO staging.cafe_tipada(
+	transaction_id, item, quantity, price_per_unit,
+	total_spent, payment_method, location,
+	transaction_date
+)
+SELECT
+	UPPER(TRIM(transaction_id)),
+	INITCAP(TRIM(item)),
+	CAST(TRIM(quantity) AS INTEGER),
+	CAST(TRIM(price_per_unit) AS NUMERIC(6, 2)),
+	CAST(TRIM(total_spent) AS NUMERIC(8, 2)),
+	INITCAP(TRIM(payment_method)),	
+	INITCAP(TRIM(location)),
+	TO_DATE(
+		TRIM(transaction_date),
+		'YYYY-MM-DD'
+	)
+FROM raw.cafe_sales
+WHERE TRIM(transaction_id) <> '';
+
+UPDATE raw.cafe_sales
+SET
+    transaction_id = NULLIF(transaction_id, 'ERROR'),
+    item = NULLIF(item, 'ERROR'),
+    quantity = NULLIF(quantity, 'ERROR'),
+    price_per_unit = NULLIF(price_per_unit, 'ERROR'),
+    total_spent = NULLIF(total_spent, 'ERROR'),
+    payment_method = NULLIF(payment_method, 'ERROR'),
+    location = NULLIF(location, 'ERROR'),
+    transaction_date = NULLIF(transaction_date, 'ERROR')
+WHERE transaction_id LIKE '%ERROR%'
+    OR item LIKE '%ERROR%'
+    OR quantity LIKE '%ERROR%'
+    OR price_per_unit LIKE '%ERROR%'
+    OR total_spent LIKE '%ERROR%'
+    OR payment_method LIKE '%ERROR%'
+    OR location LIKE '%ERROR%'
+    OR transaction_date LIKE '%ERROR%';
+
+UPDATE raw.cafe_sales
+SET
+    transaction_id = NULLIF(transaction_id, 'UNKNOWN'),
+    item = NULLIF(item, 'UNKNOWN'),
+    quantity = NULLIF(quantity, 'UNKNOWN'),
+    price_per_unit = NULLIF(price_per_unit, 'UNKNOWN'),
+    total_spent = NULLIF(total_spent, 'UNKNOWN'),
+    payment_method = NULLIF(payment_method, 'UNKNOWN'),
+    location = NULLIF(location, 'UNKNOWN'),
+    transaction_date = NULLIF(transaction_date, 'UNKNOWN')
+WHERE transaction_id LIKE '%UNKNOWN%'
+    OR item LIKE '%UNKNOWN%'
+    OR quantity LIKE '%UNKNOWN%'
+    OR price_per_unit LIKE '%UNKNOWN%'
+    OR total_spent LIKE '%UNKNOWN%'
+    OR payment_method LIKE '%UNKNOWN%'
+    OR location LIKE '%UNKNOWN%'
+    OR transaction_date LIKE '%UNKNOWN%';
+
+UPDATE raw.cafe_sales
+SET
+    transaction_id = NULLIF(transaction_id, ''),
+    item = NULLIF(item, ''),
+    quantity = NULLIF(quantity, ''),
+    price_per_unit = NULLIF(price_per_unit, ''),
+    total_spent = NULLIF(total_spent, ''),
+    payment_method = NULLIF(payment_method, ''),
+    location = NULLIF(location, ''),
+    transaction_date = NULLIF(transaction_date, '')
+WHERE transaction_id LIKE '%%'
+    OR item LIKE ''
+    OR quantity LIKE ''
+    OR price_per_unit LIKE ''
+    OR total_spent LIKE ''
+    OR payment_method LIKE ''
+    OR location LIKE ''
+    OR transaction_date LIKE '';
+
+INSERT INTO staging.cafe_tipada (transaction_id)
+SELECT TRIM(transaction_id)
+FROM raw.cafe_sales;
+
+DROP TABLE IF EXISTS staging.cafe_tipada;
+CREATE TABLE staging.cafe_tipada(
+	transaction_id VARCHAR(20) PRIMARY KEY,
+	item VARCHAR(20),
+	quantity INTEGER,
+	price_per_unit NUMERIC(6,2),
+	total_spent NUMERIC(8,2),
+	payment_method VARCHAR(20),
+	location VARCHAR(20),
+	transaction_date DATE
+	);
+
 -- Enunciado 5 MÉDIO
 -- Escreva uma única consulta, usando UNION ALL, que devolva uma linha para cada coluna
 -- da camada raw, exceto transaction_id, com quatro colunas: coluna (o nome da coluna,
 -- como texto), qtd_error, qtd_unknown e qtd_vazio (valor NULL ou texto vazio após TRIM).
 -- O resultado terá sete linhas.
 
-SELECT 
-    'item' AS coluna,
-    COUNT(*) FILTER (WHERE item = 'ERROR') AS qtd_error,
-    COUNT(*) FILTER (WHERE item = 'UNKNOWN') AS qtd_unknown,
-    COUNT(*) FILTER (WHERE item IS NULL OR TRIM(item) = '') AS qtd_vazio
-FROM raw.cafe_sales
-UNION ALL
-SELECT 'quantity', COUNT(*) FILTER (WHERE quantity = 'ERROR'), COUNT(*) FILTER (WHERE quantity = 'UNKNOWN'), 
-COUNT(*) FILTER (WHERE quantity IS NULL OR TRIM(quantity) = '')
-FROM raw.cafe_sales
-UNION ALL
-SELECT 'price_per_unit', COUNT(*) FILTER (WHERE price_per_unit = 'ERROR'), COUNT(*) FILTER (WHERE price_per_unit = 'UNKNOWN'), 
-COUNT(*) FILTER (WHERE price_per_unit IS NULL OR TRIM(price_per_unit) = '')
-FROM raw.cafe_sales
-UNION ALL
-SELECT 'total_spent', COUNT(*) FILTER (WHERE total_spent = 'ERROR'), COUNT(*) FILTER (WHERE total_spent = 'UNKNOWN'), 
-COUNT(*) FILTER (WHERE total_spent IS NULL OR TRIM(total_spent) = '')
-FROM raw.cafe_sales
-UNION ALL
-SELECT 'payment_method', COUNT(*) FILTER (WHERE payment_method = 'ERROR'), COUNT(*) FILTER (WHERE payment_method = 'UNKNOWN'), 
-COUNT(*) FILTER (WHERE payment_method IS NULL OR TRIM(payment_method) = '')
-FROM raw.cafe_sales
-UNION ALL
-SELECT 'location', COUNT(*) FILTER (WHERE location = 'ERROR'), COUNT(*) FILTER (WHERE location = 'UNKNOWN'), 
-COUNT(*) FILTER (WHERE location IS NULL OR TRIM(location) = '')
-FROM raw.cafe_sales
-UNION ALL
-SELECT 'transaction_date', COUNT(*) FILTER (WHERE transaction_date = 'ERROR'), COUNT(*) FILTER (WHERE transaction_date = 'UNKNOWN'), 
-COUNT(*) FILTER (WHERE transaction_date IS NULL OR TRIM(transaction_date) = '')
-FROM raw.cafe_sales;
+-- SELECT 
+--     'item' AS coluna,
+--     COUNT(*) FILTER (WHERE item = 'ERROR') AS qtd_error,
+--     COUNT(*) FILTER (WHERE item = 'UNKNOWN') AS qtd_unknown,
+--     COUNT(*) FILTER (WHERE item IS NULL OR TRIM(item) = '') AS qtd_vazio,
+-- FROM raw.cafe_sales
+-- UNION ALL
+-- SELECT 'quantity', COUNT(*) FILTER (WHERE quantity = 'ERROR'), COUNT(*) FILTER (WHERE quantity = 'UNKNOWN'), 
+-- COUNT(*) FILTER (WHERE quantity IS NULL OR TRIM(quantity) = '')
+-- FROM raw.cafe_sales
+-- UNION ALL
+-- SELECT 'price_per_unit', COUNT(*) FILTER (WHERE price_per_unit = 'ERROR'), COUNT(*) FILTER (WHERE price_per_unit = 'UNKNOWN'), 
+-- COUNT(*) FILTER (WHERE price_per_unit IS NULL OR TRIM(price_per_unit) = '')
+-- FROM raw.cafe_sales
+-- UNION ALL
+-- SELECT 'total_spent', COUNT(*) FILTER (WHERE total_spent = 'ERROR'), COUNT(*) FILTER (WHERE total_spent = 'UNKNOWN'), 
+-- COUNT(*) FILTER (WHERE total_spent IS NULL OR TRIM(total_spent) = '')
+-- FROM raw.cafe_sales
+-- UNION ALL
+-- SELECT 'payment_method', COUNT(*) FILTER (WHERE payment_method = 'ERROR'), COUNT(*) FILTER (WHERE payment_method = 'UNKNOWN'), 
+-- COUNT(*) FILTER (WHERE payment_method IS NULL OR TRIM(payment_method) = '')
+-- FROM raw.cafe_sales
+-- UNION ALL
+-- SELECT 'location', COUNT(*) FILTER (WHERE location = 'ERROR'), COUNT(*) FILTER (WHERE location = 'UNKNOWN'), 
+-- COUNT(*) FILTER (WHERE location IS NULL OR TRIM(location) = '')
+-- FROM raw.cafe_sales
+-- UNION ALL
+-- SELECT 'transaction_date', COUNT(*) FILTER (WHERE transaction_date = 'ERROR'), COUNT(*) FILTER (WHERE transaction_date = 'UNKNOWN'), 
+-- COUNT(*) FILTER (WHERE transaction_date IS NULL OR TRIM(transaction_date) = '')
+-- FROM raw.cafe_sales;
 
 -- Enunciado 4 FÁCIL
 -- Para cada uma das colunas item, payment_method e location da camada raw, escreva uma

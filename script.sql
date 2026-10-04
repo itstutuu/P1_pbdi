@@ -1,3 +1,47 @@
+-- Enunciado 9 MÉDIO
+-- Crie staging.cafe_sales com as mesmas colunas e tipos da Tabela 6, agora com NOT NULL
+-- em todas elas e com as restrições CHECK (quantity > 0) e CHECK (price_per_unit > 0).
+-- Carregue-a, precedida de TRUNCATE, apenas com as linhas de staging.cafe_tipada que
+-- não têm nenhum valor nulo. Escreva então uma consulta que devolva, em uma única linha,
+-- três colunas: linhas_tipada, linhas_limpas e descartadas. Registre os três números em
+-- comentário.
+
+-- Consulta
+SELECT 
+  COUNT(st.*) AS linhas_tipada,
+  COUNT(SS.*) AS linhas_limpas,
+  (COUNT(st.*) - COUNT(SS.*)) AS linhas_descartadas
+FROM staging.cafe_tipada st
+LEFT OUTER JOIN staging.cafe_sales ss ON ss.transaction_id = st.transaction_id;
+-- 10000, 9064, 936
+
+
+-- Carregando
+TRUNCATE staging.cafe_sales;
+INSERT INTO staging.cafe_sales(
+  transaction_id, item, quantity, price_per_unit, total_spent, payment_method,
+  location, transaction_date
+)
+SELECT
+  transaction_id, item, quantity, price_per_unit, total_spent, payment_method,
+  location, transaction_date
+FROM staging.cafe_tipada
+WHERE (transaction_id, item, quantity, price_per_unit, total_spent, payment_method,
+location, transaction_date) IS NOT NULL;
+
+-- Criando staging.cafe_sales com NOT NULL
+DROP TABLE IF EXISTS staging.cafe_sales;
+CREATE TABLE staging.cafe_sales(
+	transaction_id VARCHAR(20) PRIMARY KEY,
+	item VARCHAR(20) NOT NULL,
+	quantity INTEGER NOT NULL CHECK(quantity > 0),
+	price_per_unit NUMERIC(6,2) NOT NULL CHECK(price_per_unit > 0),
+	total_spent NUMERIC(8,2) NOT NULL,
+	payment_method VARCHAR(20) NOT NULL,
+	location VARCHAR(20) NOT NULL,
+	transaction_date DATE NOT NULL
+	);
+
 -- Enunciado 8 MÉDIO
 -- Aplique à tabela staging.cafe_tipada as regras da Tabela 7, na ordem indicada, com
 -- um UPDATE por regra (a R6 pode usar dois). Use subconsultas sobre staging.cardapio

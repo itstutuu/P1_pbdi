@@ -1,45 +1,120 @@
+-- Enunciado 20 MÉDIO
+-- Cubo. Usando CUBE (location, payment), mostre a receita para todas as combinações
+-- de local e forma de pagamento, com os rótulos 'TODOS' nas linhas de subtotal. Registre em
+-- comentário quantas linhas o resultado tem e justifique esse número a partir da quantidade
+-- de valores de cada dimensão.
+
+SELECT
+	COALESCE(l.location, 'TODOS') AS local,
+	COALESCE(p.payment, 'TODOS') AS forma_pgto,
+	SUM(f.total_spent)::NUMERIC(12,2) AS receita
+FROM dw.fact_sales f
+JOIN dw.dim_location l ON l.location_sk = f.location_sk
+JOIN dw.dim_payment p ON p.payment_sk = f.payment_sk
+GROUP BY CUBE (l.location, p.payment)
+ORDER BY local, receita;
+-- total de linhas: 20
+-- sendo 3 locais multiplicado por 4 formas de pagamento = 12
+-- subtotais por local = 4
+-- subtotais por forma de pagamento = 3
+-- total geral = 1
+-- somando: 12 + 4 + 3 + 1 = 20
+
+-- Enunciado 19 MÉDIO
+-- Roll-up. Usando ROLLUP (category, item), mostre a receita por item, os subtotais por
+-- categoria e o total geral, exibindo 'TODAS' e 'TODOS' (com COALESCE) no lugar dos NULL
+-- das linhas de subtotal. Explique em comentário o que representa cada tipo de linha do
+-- resultado.
+
+SELECT
+  COALESCE(i.item, 'TODOS') AS item,
+  COALESCE(i.category, 'TODAS') AS categoria,
+  SUM(f.total_spent)::NUMERIC(12,2) AS receita
+FROM dw.fact_sales f
+JOIN dw.dim_item i ON (f.item_sk = i.item_sk)
+GROUP BY ROLLUP (category, item)
+ORDER BY category, item;
+-- Até a linha 4, receita foi agrupada por item, e item, por categoria. Na linha 5,
+-- o ROLLUP aumentou a granularidade de item, somou todos os itens agrupados pela categoria
+-- Bebida e somou a receita para esta. O mesmo aconteceu para Comida.
+-- A última linha é uma "desgranularização" ainda maior, juntando todos os items e todas
+-- as categorias no somatório da receita.
+
+-- Enunciado 18 MÉDIO
+-- Dice. Restrinja o cubo à categoria 'Bebida', às formas de pagamento 'Cash' e 'Digital
+-- Wallet' e aos meses de janeiro a junho. Mostre a receita por item e forma de pagamento
+-- nesse recorte.
+
+SELECT 
+  i.item,
+  SUM(f.total_spent) AS receita,
+  p.payment AS forma_pgto,
+  d.month_name AS mes
+FROM dw.fact_sales f
+JOIN dw.dim_item i ON (f.item_sk = i.item_sk)
+JOIN dw.dim_date d ON (f.date_sk = d.date_sk)
+JOIN dw.dim_payment p ON (f.payment_sk = p.payment_sk)
+WHERE i.category = 'Bebida'
+AND p.payment IN ('Cash', 'Digital Wallet')
+AND (month >= 1 AND month <= 6)
+GROUP BY item, forma_pgto, mes
+ORDER BY receita DESC;
+
+-- Enunciado 17 FÁCIL
+-- Slice. Fixe o quarto trimestre e mostre a receita por item nesse trimestre.
+
+SELECT
+  i.item,
+  SUM(f.total_spent) AS receita_4_trimestre
+FROM dw.fact_sales f
+JOIN dw.dim_item i ON (f.item_sk = i.item_sk)
+JOIN dw.dim_date d ON (f.date_sk = d.date_sk)
+WHERE d.quarter = 4
+GROUP BY item
+ORDER BY receita_4_trimestre DESC;
+
 -- Enunciado 16 FÁCIL
 -- Mostre, para cada dia da semana, se ele é fim de semana, a quantidade de vendas 
 -- e a receita, da maior para a menor receita.
 
-SELECT
-  d.day_of_week AS dia_semana,
-  d.is_weekend AS fim_de_semana,
-  COUNT(*) AS vendas,
-  SUM(f.total_spent)::NUMERIC(12, 2) AS receita
-FROM dw.fact_sales f
-JOIN dw.dim_date d ON (d.date_sk = f.date_sk)
-GROUP BY dia_semana, fim_de_semana
-ORDER BY receita DESC;
+-- SELECT
+--   d.day_of_week AS dia_semana,
+--   d.is_weekend AS fim_de_semana,
+--   COUNT(*) AS vendas,
+--   SUM(f.total_spent)::NUMERIC(12, 2) AS receita
+-- FROM dw.fact_sales f
+-- JOIN dw.dim_date d ON (d.date_sk = f.date_sk)
+-- GROUP BY dia_semana, fim_de_semana
+-- ORDER BY receita DESC;
 
 -- Enunciado 15 FÁCIL
 -- Mostre o ranking de itens: categoria, item, total de unidades vendidas e receita, da maior
 -- para a menor receita.
 
-SELECT
-  i.category AS categoria,
-  i.item,
-  COUNT(i.item) AS total_unidades_vendidas,
-  SUM(f.total_spent) AS receita
-FROM dw.fact_sales f
-JOIN dw.dim_item i ON (f.item_sk = i.item_sk)
-GROUP BY category, item
-ORDER BY receita DESC;
+-- SELECT
+--   i.category AS categoria,
+--   i.item,
+--   COUNT(i.item) AS total_unidades_vendidas,
+--   SUM(f.total_spent) AS receita
+-- FROM dw.fact_sales f
+-- JOIN dw.dim_item i ON (f.item_sk = i.item_sk)
+-- GROUP BY category, item
+-- ORDER BY receita DESC;
 
 -- Enunciado 14 FÁCIL
 -- Mostre, para cada mês, o nome do mês, a quantidade de vendas, a receita e o 
 -- ticket médio (arredondado para duas casas), em ordem cronológica.
 
-SELECT 
-  d.month AS mes,
-  d.month_name AS nome_mes,
-  COUNT(*) AS qtd_vendas,
-  SUM(f.total_spent)::NUMERIC(12, 2) AS receita_total,
-  ROUND(AVG(f.total_spent), 2) AS ticket_medio
-FROM dw.fact_sales f
-JOIN dw.dim_date d ON (d.date_sk = f.date_sk)
-GROUP BY mes, nome_mes
-ORDER BY mes, nome_mes ASC;
+-- SELECT 
+--   d.month AS mes,
+--   d.month_name AS nome_mes,
+--   COUNT(*) AS qtd_vendas,
+--   SUM(f.total_spent)::NUMERIC(12, 2) AS receita_total,
+--   ROUND(AVG(f.total_spent), 2) AS ticket_medio
+-- FROM dw.fact_sales f
+-- JOIN dw.dim_date d ON (d.date_sk = f.date_sk)
+-- GROUP BY mes, nome_mes
+-- ORDER BY mes, nome_mes ASC;
 
 -- Enunciado 13 DIFÍCIL
 -- Escreva um bloco anônimo PL/pgSQL (DO), sem criar função nem procedimento, que produza

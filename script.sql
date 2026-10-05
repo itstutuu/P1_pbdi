@@ -6,44 +6,47 @@
 -- com as dimensões. Por fim, escreva uma consulta que compare, lado a lado, a quantidade de
 -- linhas e a soma de total_spent da staging e da fato. Os dois pares devem ser iguais.
 
--- Criando, adc. índice e carregando dw.fact_sales
-DROP TABLE IF EXISTS dw.fact_sales CASCADE;
-CREATE TABLE dw.fact_sales(
-  transaction_nk VARCHAR(20) PRIMARY KEY,
-  date_sk INTEGER NOT NULL,
-  item_sk INTEGER NOT NULL REFERENCES dw.dim_item(item_sk),
-  payment_sk INTEGER NOT NULL REFERENCES dw.dim_payment(payment_sk),
-  location_sk INTEGER NOT NULL REFERENCES dw.dim_location(location_sk),
-  quantity INTEGER NOT NULL,
-  price_per_unit NUMERIC(6,2) NOT NULL,
-  total_spent NUMERIC(8,2) NOT NULL
-);
+-- -- 12.4 Consulta
+-- SELECT COUNT(total_spent) AS qtd_linhas, SUM(total_spent) AS soma_total_spent
+-- FROM staging.cafe_sales
+-- UNION ALL
+-- SELECT COUNT(total_spent), SUM(total_spent)
+-- FROM dw.fact_sales;
+-- -- Pares iguais
 
-CREATE INDEX ix_fs_date ON dw.fact_sales(date_sk);
-CREATE INDEX ix_fs_item ON dw.fact_sales(item_sk);
-CREATE INDEX ix_fs_payment ON dw.fact_sales(payment_sk);
-CREATE INDEX ix_fs_location ON dw.fact_sales(location_sk);
+-- -- 12.3.2 Conferindo carregamento
+-- SELECT * FROM dw.fact_sales;
 
-TRUNCATE dw.fact_sales;
-INSERT INTO dw.fact_sales(
-  transaction_nk, date_sk, item_sk, payment_sk, location_sk, quantity, price_per_unit, total_spent
-)
-SELECT
-  s.transaction_id, CAST(TO_CHAR(s.transaction_date, 'YYYMMDD') AS INTEGER), di.item_sk, dp.payment_sk,
-  dl.location_sk, s.quantity, s.price_per_unit, s.total_spent
-FROM staging.cafe_sales s
-INNER JOIN dw.dim_item di ON (s.item = di.item)
-INNER JOIN dw.dim_payment dp ON (s.payment_method = dp.payment)
-INNER JOIN dw.dim_location dl ON (s.location = dl.location);
+-- -- 12.3.1 Carregando a partir de staging.cafe_sales
+-- INSERT INTO dw.fact_sales(
+--   transaction_nk, date_sk, item_sk, payment_sk, location_sk, quantity, price_per_unit, total_spent
+-- )
+-- SELECT
+--   s.transaction_id, CAST(TO_CHAR(s.transaction_date, 'YYYMMDD') AS INTEGER), di.item_sk, dp.payment_sk,
+--   dl.location_sk, s.quantity, s.price_per_unit, s.total_spent
+-- FROM staging.cafe_sales s
+-- INNER JOIN dw.dim_item di ON (s.item = di.item)
+-- INNER JOIN dw.dim_payment dp ON (s.payment_method = dp.payment)
+-- INNER JOIN dw.dim_location dl ON (s.location = dl.location);
 
--- Consulta
-SELECT COUNT(total_spent) AS qtd_linhas, SUM(total_spent) AS soma
-FROM staging.cafe_sales
-UNION ALL
-SELECT COUNT(total_spent) AS qtd_linhas, SUM(total_spent) AS soma
-FROM dw.fact_sales;
--- Pares iguais
+-- -- 12.2 Adicionando índice
+-- CREATE INDEX ix_fs_date ON dw.fact_sales(date_sk);
+-- CREATE INDEX ix_fs_item ON dw.fact_sales(item_sk);
+-- CREATE INDEX ix_fs_payment ON dw.fact_sales(payment_sk);
+-- CREATE INDEX ix_fs_location ON dw.fact_sales(location_sk);
 
+-- -- 12.1 Criando dw.fact_sales
+-- DROP TABLE IF EXISTS dw.fact_sales CASCADE;
+-- CREATE TABLE dw.fact_sales(
+--   transaction_nk VARCHAR(20) PRIMARY KEY,
+--   date_sk INTEGER NOT NULL,
+--   item_sk INTEGER NOT NULL REFERENCES dw.dim_item(item_sk),
+--   payment_sk INTEGER NOT NULL REFERENCES dw.dim_payment(payment_sk),
+--   location_sk INTEGER NOT NULL REFERENCES dw.dim_location(location_sk),
+--   quantity INTEGER NOT NULL,
+--   price_per_unit NUMERIC(6,2) NOT NULL,
+--   total_spent NUMERIC(8,2) NOT NULL
+-- );
 
 -- Enunciado 11 FÁCIL
 -- Crie e carregue dw.dim_item, dw.dim_payment e dw.dim_location, com chaves SERIAL e
@@ -52,44 +55,47 @@ FROM dw.fact_sales;
 -- com UNION ALL: esperam-se 8 itens, 4 formas de pagamento e 3 locais, já incluído o valor
 -- 'Unknown'.
 
--- Criando e carregando dimensões
-DROP TABLE IF EXISTS dw.dim_item CASCADE;
-CREATE TABLE dw.dim_item(
-  item_sk SERIAL PRIMARY KEY,
-  item VARCHAR(40) NOT NULL UNIQUE,
-  category VARCHAR(40) NOT NULL
-);
-DROP TABLE IF EXISTS dw.dim_payment CASCADE;
-CREATE TABLE dw.dim_payment(
-  payment_sk SERIAL PRIMARY KEY,
-  payment VARCHAR(20) NOT NULL UNIQUE
-);
-DROP TABLE IF EXISTS dw.dim_location CASCADE;
-CREATE TABLE dw.dim_location(
-  location_sk SERIAL PRIMARY KEY,
-  location VARCHAR(40) NOT NULL
-);
+-- -- 11.3 Consulta
+-- SELECT item FROM dw.dim_item
+-- UNION ALL
+-- SELECT payment FROM dw.dim_payment
+-- UNION ALL
+-- SELECT location FROM dw.dim_location;
 
-SELECT * FROM staging.cafe_sales;
-SELECT * FROM staging.cardapio;
+-- -- 11.2 Carregando as dimensões 
+-- SELECT * FROM staging.cafe_sales;
+-- SELECT * FROM staging.cardapio;
 
-INSERT INTO dw.dim_item(item, category)
-SELECT DISTINCT ss.item, sc.category
-FROM staging.cafe_sales ss
-INNER JOIN staging.cardapio sc ON (ss.item = sc.item);
+-- INSERT INTO dw.dim_item(item, category)
+-- SELECT DISTINCT ss.item, sc.category
+-- FROM staging.cafe_sales ss
+-- INNER JOIN staging.cardapio sc ON (ss.item = sc.item);
 
-INSERT INTO dw.dim_payment(payment)
-SELECT DISTINCT payment_method FROM staging.cafe_sales;
+-- INSERT INTO dw.dim_payment(payment)
+-- SELECT DISTINCT payment_method FROM staging.cafe_sales;
 
-INSERT INTO dw.dim_location(location)
-SELECT DISTINCT location FROM staging.cafe_sales;
+-- INSERT INTO dw.dim_location(location)
+-- SELECT DISTINCT location FROM staging.cafe_sales;
 
--- Consulta
-SELECT item FROM dw.dim_item
-UNION ALL
-SELECT location FROM dw.dim_location
-UNION ALL
-SELECT payment FROM dw.dim_payment;
+-- -- 11.1 Criando as dimensões dw.dim_item, dw.dim_payment e dw.dim_location
+-- DROP TABLE IF EXISTS dw.dim_item CASCADE;
+-- CREATE TABLE dw.dim_item(
+--   item_sk SERIAL PRIMARY KEY,
+--   item VARCHAR(40) NOT NULL UNIQUE,
+--   category VARCHAR(40) NOT NULL
+-- );
+
+-- DROP TABLE IF EXISTS dw.dim_payment CASCADE;
+-- CREATE TABLE dw.dim_payment(
+--   payment_sk SERIAL PRIMARY KEY,
+--   payment VARCHAR(20) NOT NULL UNIQUE
+-- );
+
+-- DROP TABLE IF EXISTS dw.dim_location CASCADE;
+-- CREATE TABLE dw.dim_location(
+--   location_sk SERIAL PRIMARY KEY,
+--   location VARCHAR(40) NOT NULL
+-- );
 
 -- Enunciado 10 FÁCIL
 -- Consulte a menor e a maior data de venda registradas em staging.cafe_sales. Em seguida,
@@ -97,40 +103,46 @@ SELECT payment FROM dw.dim_payment;
 -- carregue-a com generate_series, gerando todos os dias dos anos completos que cobrem
 -- esse intervalo. Confira a quantidade de linhas geradas.
 
--- Criando e carregando dw.dim_date
-DROP TABLE IF EXISTS dw.dim_date CASCADE;
-CREATE TABLE dw.dim_date(
-  date_sk INTEGER PRIMARY KEY,
-  full_date DATE NOT NULL UNIQUE,
-  day SMALLINT NOT NULL,
-  month SMALLINT NOT NULL,
-  month_name VARCHAR(15)NOT NULL,
-  quarter SMALLINT NOT NULL,
-  year SMALLINT NOT NULL,
-  day_of_week VARCHAR(15)NOT NULL,
-  is_weekend BOOLEAN NOT NULL
-);
+-- -- 10.4 Conferindo quantidade de linhas geradas
+-- SELECT COUNT(*) FROM dw.dim_date;
+-- -- 365 linhas/dias
 
-INSERT INTO dw.dim_date
-SELECT
-  CAST(TO_CHAR(d,'YYYYMMDD') AS INTEGER),
-  d::DATE,
-  EXTRACT(DAY FROM d)::SMALLINT,
-  EXTRACT(MONTH FROM d)::SMALLINT,
-  TO_CHAR(d, 'TMMonth'),
-  EXTRACT(QUARTER FROM d)::SMALLINT,
-  EXTRACT(YEAR FROM d)::SMALLINT,
-  TO_CHAR(d, 'TMDay'),
-  EXTRACT(DOW FROM d) IN (0,6)
-  FROM generate_series(DATE '2023-01-01', DATE '2023-12-31', INTERVAL '1day') g(d);
+-- -- 10.3 Carregando dw.dim_date
+-- INSERT INTO dw.dim_date
+-- SELECT
+--   CAST(TO_CHAR(d,'YYYYMMDD') AS INTEGER),
+--   d::DATE,
+--   EXTRACT(DAY FROM d)::SMALLINT,
+--   EXTRACT(MONTH FROM d)::SMALLINT,
+--   TO_CHAR(d, 'TMMonth'),
+--   EXTRACT(QUARTER FROM d)::SMALLINT,
+--   EXTRACT(YEAR FROM d)::SMALLINT,
+--   TO_CHAR(d, 'TMDay'),
+--   EXTRACT(DOW FROM d) IN (0,6)
+--   FROM generate_series(DATE '2023-01-01', 
+--   DATE '2023-12-31', INTERVAL '1day') g(d);
+-- -- INSERT 0 365
 
-  SELECT COUNT(*) FROM dw.dim_date;
+-- -- 10.2 Criando dw.dim_date
+-- DROP TABLE IF EXISTS dw.dim_date CASCADE;
+-- CREATE TABLE dw.dim_date(
+--   date_sk INTEGER PRIMARY KEY,
+--   full_date DATE NOT NULL UNIQUE,
+--   day SMALLINT NOT NULL,
+--   month SMALLINT NOT NULL,
+--   month_name VARCHAR(15)NOT NULL,
+--   quarter SMALLINT NOT NULL,
+--   year SMALLINT NOT NULL,
+--   day_of_week VARCHAR(15)NOT NULL,
+--   is_weekend BOOLEAN NOT NULL
+-- );
 
--- Consulta
-SELECT 
-  MIN(transaction_date) AS menor_data,
-  MAX(transaction_date) AS maior_data
-FROM staging.cafe_sales;
+-- -- 10.1 Consulta da menor e da maior data de venda
+-- SELECT 
+--   MIN(transaction_date) AS menor_data,
+--   MAX(transaction_date) AS maior_data
+-- FROM staging.cafe_sales;
+-- -- menor data: 2023-01-01; maior data: 2023-12-31
 
 -- Enunciado 9 MÉDIO
 -- Crie staging.cafe_sales com as mesmas colunas e tipos da Tabela 6, agora com NOT NULL
@@ -140,41 +152,43 @@ FROM staging.cafe_sales;
 -- três colunas: linhas_tipada, linhas_limpas e descartadas. Registre os três números em
 -- comentário.
 
--- Consulta
-SELECT 
-  COUNT(st.*) AS linhas_tipada,
-  COUNT(SS.*) AS linhas_limpas,
-  (COUNT(st.*) - COUNT(SS.*)) AS linhas_descartadas
-FROM staging.cafe_tipada st
-LEFT OUTER JOIN staging.cafe_sales ss ON ss.transaction_id = st.transaction_id;
--- 10000, 9064, 936
+-- -- 9.3 Consulta
+-- SELECT 
+--   COUNT(st.*) AS linhas_tipada,
+--   COUNT(ss.*) AS linhas_limpas,
+--   (COUNT(st.*) - COUNT(ss.*)) AS linhas_descartadas
+-- FROM staging.cafe_tipada st
+-- LEFT OUTER JOIN staging.cafe_sales ss ON ss.transaction_id = st.transaction_id;
+-- -- linhas tipada: 10000; linhas_limpas: 9064; linhas_descartadas: 936
 
+-- -- 9.2.2 Conferindo carregamento
+-- SELECT * FROM staging.cafe_sales;
 
--- Carregando
-TRUNCATE staging.cafe_sales;
-INSERT INTO staging.cafe_sales(
-  transaction_id, item, quantity, price_per_unit, total_spent, payment_method,
-  location, transaction_date
-)
-SELECT
-  transaction_id, item, quantity, price_per_unit, total_spent, payment_method,
-  location, transaction_date
-FROM staging.cafe_tipada
-WHERE (transaction_id, item, quantity, price_per_unit, total_spent, payment_method,
-location, transaction_date) IS NOT NULL;
+-- -- 9.2.1 Carregando staging.cafe_sales
+-- TRUNCATE staging.cafe_sales;
+-- INSERT INTO staging.cafe_sales(
+--   transaction_id, item, quantity, price_per_unit, total_spent, payment_method,
+--   location, transaction_date
+-- )
+-- SELECT
+--   transaction_id, item, quantity, price_per_unit, total_spent, payment_method,
+--   location, transaction_date
+-- FROM staging.cafe_tipada
+-- WHERE (transaction_id, item, quantity, price_per_unit, total_spent, payment_method,
+-- location, transaction_date) IS NOT NULL;
 
--- Criando staging.cafe_sales com NOT NULL
-DROP TABLE IF EXISTS staging.cafe_sales;
-CREATE TABLE staging.cafe_sales(
-	transaction_id VARCHAR(20) PRIMARY KEY,
-	item VARCHAR(20) NOT NULL,
-	quantity INTEGER NOT NULL CHECK(quantity > 0),
-	price_per_unit NUMERIC(6,2) NOT NULL CHECK(price_per_unit > 0),
-	total_spent NUMERIC(8,2) NOT NULL,
-	payment_method VARCHAR(20) NOT NULL,
-	location VARCHAR(20) NOT NULL,
-	transaction_date DATE NOT NULL
-	);
+-- -- 9.1 Criando staging.cafe_sales com NOT NULL
+-- DROP TABLE IF EXISTS staging.cafe_sales;
+-- CREATE TABLE staging.cafe_sales(
+-- 	transaction_id VARCHAR(20) PRIMARY KEY,
+-- 	item VARCHAR(20) NOT NULL,
+-- 	quantity INTEGER NOT NULL CHECK(quantity > 0),
+-- 	price_per_unit NUMERIC(6,2) NOT NULL CHECK(price_per_unit > 0),
+-- 	total_spent NUMERIC(8,2) NOT NULL,
+-- 	payment_method VARCHAR(20) NOT NULL,
+-- 	location VARCHAR(20) NOT NULL,
+-- 	transaction_date DATE NOT NULL
+-- 	);
 
 -- Enunciado 8 MÉDIO
 -- Aplique à tabela staging.cafe_tipada as regras da Tabela 7, na ordem indicada, com
@@ -182,85 +196,89 @@ CREATE TABLE staging.cafe_sales(
 -- nas regras R1 e R5. Abaixo de cada UPDATE, registre em comentário a quantidade de linhas
 -- afetadas informada pelo pgAdmin.
 
--- R6 - forma de pagamento ou local nulos
-UPDATE staging.cafe_tipada
-SET payment_method = 'Unknown'
-WHERE payment_method IS NULL;
--- UPDATE 3178 linhas afetadas
-UPDATE staging.cafe_tipada
-SET location = 'Unknown'
-WHERE location IS NULL;
--- UPDATE 3961 linhas afetadas
+-- -- Aplicando R6 - forma de pagamento ou local nulos
+-- UPDATE staging.cafe_tipada
+-- SET payment_method = 'Unknown'
+-- WHERE payment_method IS NULL;
+-- -- UPDATE 3178 linhas afetadas
+-- UPDATE staging.cafe_tipada
+-- SET location = 'Unknown'
+-- WHERE location IS NULL;
+-- -- UPDATE 3961 linhas afetadas
 
--- R5 - item nulo e preço conhecido, pertencente a um único item do cardápio
-UPDATE staging.cafe_tipada AS cafe
-SET item = (
-    SELECT MIN(cardapio.item)
-    FROM staging.cardapio AS cardapio
-    WHERE cardapio.price = cafe.price_per_unit
-    GROUP BY cardapio.price
-    HAVING COUNT(DISTINCT cardapio.item) = 1
-)
-WHERE cafe.item IS NULL
-  AND cafe.price_per_unit IS NOT NULL;
--- UPDATE 963 linhas afetadas
+-- -- Aplicando R5 - item nulo e preço conhecido, pertencente a um único item do cardápio
+-- UPDATE staging.cafe_tipada AS cafe
+-- SET item = (
+--     SELECT MIN(cardapio.item)
+--     FROM staging.cardapio AS cardapio
+--     WHERE cardapio.price = cafe.price_per_unit
+--     GROUP BY cardapio.price
+--     HAVING COUNT(DISTINCT cardapio.item) = 1
+-- )
+-- WHERE cafe.item IS NULL
+--   AND cafe.price_per_unit IS NOT NULL;
+-- -- UPDATE 963 linhas afetadas
 
--- R4 - total nulo, quantidade e preço conhecidos
-UPDATE staging.cafe_tipada
-SET total_spent = (quantity * price_per_unit)
-WHERE total_spent IS NULL
-  AND price_per_unit IS NOT NULL
-  AND quantity IS NOT NULL;
--- UPDATE 479 linhas afetadas
+-- -- Aplicando R4 - total nulo, quantidade e preço conhecidos
+-- UPDATE staging.cafe_tipada
+-- SET total_spent = (quantity * price_per_unit)
+-- WHERE total_spent IS NULL
+--   AND price_per_unit IS NOT NULL
+--   AND quantity IS NOT NULL;
+-- -- UPDATE 479 linhas afetadas
 
--- R3 - quantidade nula, preço e total conhecidos
-UPDATE staging.cafe_tipada
-SET quantity = ROUND((total_spent / price_per_unit), 0)
-WHERE quantity IS NULL
-  AND price_per_unit IS NOT NULL
-  AND total_spent IS NOT NULL;
--- UPDATE 456 linhas afetadas
+-- -- Aplicando R3 - quantidade nula, preço e total conhecidos
+-- UPDATE staging.cafe_tipada
+-- SET quantity = ROUND((total_spent / price_per_unit), 0)
+-- WHERE quantity IS NULL
+--   AND price_per_unit IS NOT NULL
+--   AND total_spent IS NOT NULL;
+-- -- UPDATE 456 linhas afetadas
 
--- R2 - preço nulo, quantidade e total conhecidos
-UPDATE staging.cafe_tipada
-SET price_per_unit = (total_spent / quantity)
-WHERE price_per_unit IS NULL
-	AND quantity IS NOT NULL
-	AND total_spent IS NOT NULL;
--- UPDATE 48 linhas afetadas
+-- -- Aplicando R2 - preço nulo, quantidade e total conhecidos
+-- UPDATE staging.cafe_tipada
+-- SET price_per_unit = (total_spent / quantity)
+-- WHERE price_per_unit IS NULL
+-- 	AND quantity IS NOT NULL
+-- 	AND total_spent IS NOT NULL;
+-- -- UPDATE 48 linhas afetadas
 
--- R1 - preço nulo e item conhecido
-UPDATE staging.cafe_tipada AS cafe
-SET price_per_unit = (
-    SELECT cardapio.price
-    FROM staging.cardapio AS cardapio
-    WHERE cardapio.item = cafe.item
-)
-WHERE cafe.price_per_unit IS NULL
-  AND cafe.item IS NOT NULL;
--- UPDATE 479 linhas afetadas
+-- -- Aplicando R1 - preço nulo e item conhecido
+-- UPDATE staging.cafe_tipada AS cafe
+-- SET price_per_unit = (
+--     SELECT cardapio.price
+--     FROM staging.cardapio AS cardapio
+--     WHERE cardapio.item = cafe.item
+-- )
+-- WHERE cafe.price_per_unit IS NULL
+--   AND cafe.item IS NOT NULL;
+-- -- UPDATE 479 linhas afetadas
 
 -- Enunciado 7 FÁCIL
 -- Crie a tabela staging.cardapio com as colunas item (VARCHAR(20), chave primária), price
 -- (NUMERIC(6,2) NOT NULL) e category (VARCHAR(10) NOT NULL) e insira nela as oito linhas
 -- da Tabela 3.
-SELECT * FROM staging.cardapio;
 
-INSERT INTO staging.cardapio (item, price, category) VALUES ('Cookie', 1.00, 'Comida');
-INSERT INTO staging.cardapio (item, price, category) VALUES ('Tea', 1.50, 'Bebida');
-INSERT INTO staging.cardapio (item, price, category) VALUES ('Coffee', 2.00, 'Bebida');
-INSERT INTO staging.cardapio (item, price, category) VALUES ('Cake', 3.00, 'Comida');
-INSERT INTO staging.cardapio (item, price, category) VALUES ('Juice', 3.00, 'Bebida');
-INSERT INTO staging.cardapio (item, price, category) VALUES ('Sandwich', 4.00, 'Comida');
-INSERT INTO staging.cardapio (item, price, category) VALUES ('Smoothie', 4.00, 'Bebida');
-INSERT INTO staging.cardapio (item, price, category) VALUES ('Salad', 5.00, 'Comida');
+-- -- 7.2.2 Conferindo inserção
+-- SELECT * FROM staging.cardapio;
 
-DROP TABLE IF EXISTS staging.cardapio;
-CREATE TABLE staging.cardapio(
-	item VARCHAR(20) PRIMARY KEY,
-	price NUMERIC(6,2) NOT NULL,
-	category VARCHAR(10) NOT NULL
-	);
+-- -- 7.2.1 Inserindo dados da Tabela 3
+-- INSERT INTO staging.cardapio (item, price, category) VALUES ('Cookie', 1.00, 'Comida');
+-- INSERT INTO staging.cardapio (item, price, category) VALUES ('Tea', 1.50, 'Bebida');
+-- INSERT INTO staging.cardapio (item, price, category) VALUES ('Coffee', 2.00, 'Bebida');
+-- INSERT INTO staging.cardapio (item, price, category) VALUES ('Cake', 3.00, 'Comida');
+-- INSERT INTO staging.cardapio (item, price, category) VALUES ('Juice', 3.00, 'Bebida');
+-- INSERT INTO staging.cardapio (item, price, category) VALUES ('Sandwich', 4.00, 'Comida');
+-- INSERT INTO staging.cardapio (item, price, category) VALUES ('Smoothie', 4.00, 'Bebida');
+-- INSERT INTO staging.cardapio (item, price, category) VALUES ('Salad', 5.00, 'Comida');
+
+-- -- 7.1 Criando a tabela staging.cardapio
+-- DROP TABLE IF EXISTS staging.cardapio;
+-- CREATE TABLE staging.cardapio(
+-- 	item VARCHAR(20) PRIMARY KEY,
+-- 	price NUMERIC(6,2) NOT NULL,
+-- 	category VARCHAR(10) NOT NULL
+-- 	);
 
 -- Enunciado 6 MÉDIO
 -- Crie staging.cafe_tipada conforme a Tabela 6 e carregue-a a partir de raw.cafe_sales
@@ -270,9 +288,10 @@ CREATE TABLE staging.cardapio(
 -- escreva uma consulta que conte os NULL de cada coluna da tabela tipada. Para cada coluna,
 -- o total deve ser igual à soma qtd_error + qtd_unknown + qtd_vazio obtida no Enunciado 5.
 
-SELECT 'item' AS coluna,
-COUNT(*) FILTER (WHERE item IS NULL) AS qtd_vazio
-FROM staging.cafe_tipada
+-- -- 6.4 Consulta a contagem de NULL de cada coluna da tabela tipada
+-- SELECT 'item' AS coluna,
+-- COUNT(*) FILTER (WHERE item IS NULL) AS qtd_vazio
+-- FROM staging.cafe_tipada
 -- UNION ALL
 -- SELECT 'quantity', 
 -- COUNT(*) FILTER (WHERE quantity IS NULL)
@@ -298,8 +317,10 @@ FROM staging.cafe_tipada
 -- COUNT(*) FILTER (WHERE transaction_date IS NULL)
 -- FROM staging.cafe_tipada;
 
+-- -- 6.3.2 Conferindo carregamento
 -- SELECT * FROM staging.cafe_tipada;
 
+-- -- 6.3.1 Carregando staging.cafe_tipada a partir de raw.cafe_sales
 -- TRUNCATE TABLE staging.cafe_tipada;
 -- INSERT INTO staging.cafe_tipada(
 -- 	transaction_id, item, quantity, price_per_unit,
@@ -321,6 +342,7 @@ FROM staging.cafe_tipada
 -- FROM raw.cafe_sales
 -- WHERE TRIM(transaction_id) <> '';
 
+-- -- 6.2.3 Transformando 'ERROR' em NULL
 -- UPDATE raw.cafe_sales
 -- SET
 --     transaction_id = NULLIF(transaction_id, 'ERROR'),
@@ -340,6 +362,7 @@ FROM staging.cafe_tipada
 --     OR location LIKE '%ERROR%'
 --     OR transaction_date LIKE '%ERROR%';
 
+-- -- 6.2.3 Transformando 'UNKNOWN' em NULL
 -- UPDATE raw.cafe_sales
 -- SET
 --     transaction_id = NULLIF(transaction_id, 'UNKNOWN'),
@@ -359,6 +382,7 @@ FROM staging.cafe_tipada
 --     OR location LIKE '%UNKNOWN%'
 --     OR transaction_date LIKE '%UNKNOWN%';
 
+-- -- 6.2.1 Transformando '' (vazio) em NULL
 -- UPDATE raw.cafe_sales
 -- SET
 --     transaction_id = NULLIF(transaction_id, ''),
@@ -378,10 +402,7 @@ FROM staging.cafe_tipada
 --     OR location LIKE ''
 --     OR transaction_date LIKE '';
 
--- INSERT INTO staging.cafe_tipada (transaction_id)
--- SELECT TRIM(transaction_id)
--- FROM raw.cafe_sales;
-
+-- -- 6.1 Criando staging.cafe_tipada
 -- DROP TABLE IF EXISTS staging.cafe_tipada;
 -- CREATE TABLE staging.cafe_tipada(
 -- 	transaction_id VARCHAR(20) PRIMARY KEY,
@@ -436,16 +457,19 @@ FROM staging.cafe_tipada
 -- consulta que liste cada valor distinto e a quantidade de linhas em que ele aparece, da maior
 -- para a menor quantidade. Os valores NULL também devem aparecer.
 
+-- -- 4.3 Consulta para 'location'
 -- SELECT DISTINCT location AS location_distintos, COUNT (location) AS contagem
 -- FROM raw.cafe_sales
 -- GROUP BY location
 -- ORDER BY contagem DESC;
 
+-- -- 4.2 Consulta para 'payment_method'
 -- SELECT DISTINCT payment_method AS payment_method_distintos, COUNT (payment_method) AS contagem
 -- FROM raw.cafe_sales
 -- GROUP BY payment_method
 -- ORDER BY contagem DESC;
 
+-- -- 4.1 Consulta para 'item'
 -- SELECT DISTINCT item AS itens_distintos, COUNT (item) AS contagem
 -- FROM raw.cafe_sales
 -- GROUP BY item
@@ -457,13 +481,16 @@ FROM staging.cafe_tipada
 -- comentário as opções usadas e escreva duas consultas de validação: o total de linhas (10.000
 -- esperadas) e o total de valores distintos de transaction_id
 
+-- -- 3.3 Consulta de validação do total de valores distintos de transaction_id
 -- SELECT COUNT(DISTINCT transaction_id) AS total_distintos_transaction_id
 -- FROM raw.cafe_sales;
 
+-- -- 3.2 Consulta de validação do total de linhas
 -- SELECT COUNT (*) AS total_linhas
 -- FROM raw.cafe_sales;
 
--- Configurações de importação do arquivo 'dirty_cafe_sales.csv'
+-- -- 3.1 Importando dirty_cafe_sales.csv para raw.cafe_sales com as configurações de importação 
+-- -- abaixo
 -- FORMAT csv
 -- DELIMITER ','
 -- HEADER [ True | MATCH ]
@@ -474,8 +501,10 @@ FROM staging.cafe_tipada
 -- nenhuma restrição e na mesma ordem do arquivo CSV. Inicie o bloco com DROP TABLE IF
 -- EXISTS ... CASCADE.
 
+-- -- 2.2 Conferindo a criação da tabela raw.cafe_sales
 -- SELECT * FROM raw.cafe_sales;
 
+-- -- 2.1 Criando a tabela raw.cafe_sales
 -- DROP TABLE IF EXISTS raw.cafe_sales CASCADE;
 -- CREATE TABLE raw.cafe_sales(
 -- 	transaction_id TEXT,
@@ -494,13 +523,17 @@ FROM staging.cafe_tipada
 -- e dw, usando IF NOT EXISTS, e escreva uma consulta a information_schema.schemata que
 -- devolva exatamente essas três linhas.
 
+-- -- 1.3 Consultando a information_schema.schemata
+-- SELECT schema_name
+-- FROM information_schema.schemata
+-- WHERE schema_name IN ('raw', 'staging', 'dw');
+
+-- -- 1.2 Criando os schemas raw, staging e dw
 -- CREATE SCHEMA IF NOT EXISTS raw;
 -- CREATE SCHEMA IF NOT EXISTS staging;
 -- CREATE SCHEMA IF NOT EXISTS dw;
 
--- SELECT schema_name
--- FROM information_schema.schemata;
-
+-- -- 1.1 Criando o banco de dados cafe_dw
 -- CREATE DATABASE cafe_dw
 --     WITH
 --     OWNER = postgres

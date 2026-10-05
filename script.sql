@@ -1,3 +1,46 @@
+-- Enunciado 16 FÁCIL
+-- Mostre, para cada dia da semana, se ele é fim de semana, a quantidade de vendas 
+-- e a receita, da maior para a menor receita.
+
+SELECT
+  d.day_of_week AS dia_semana,
+  d.is_weekend AS fim_de_semana,
+  COUNT(*) AS vendas,
+  SUM(f.total_spent)::NUMERIC(12, 2) AS receita
+FROM dw.fact_sales f
+JOIN dw.dim_date d ON (d.date_sk = f.date_sk)
+GROUP BY dia_semana, fim_de_semana
+ORDER BY receita DESC;
+
+-- Enunciado 15 FÁCIL
+-- Mostre o ranking de itens: categoria, item, total de unidades vendidas e receita, da maior
+-- para a menor receita.
+
+SELECT
+  i.category AS categoria,
+  i.item,
+  COUNT(i.item) AS total_unidades_vendidas,
+  SUM(f.total_spent) AS receita
+FROM dw.fact_sales f
+JOIN dw.dim_item i ON (f.item_sk = i.item_sk)
+GROUP BY category, item
+ORDER BY receita DESC;
+
+-- Enunciado 14 FÁCIL
+-- Mostre, para cada mês, o nome do mês, a quantidade de vendas, a receita e o 
+-- ticket médio (arredondado para duas casas), em ordem cronológica.
+
+SELECT 
+  d.month AS mes,
+  d.month_name AS nome_mes,
+  COUNT(*) AS qtd_vendas,
+  SUM(f.total_spent)::NUMERIC(12, 2) AS receita_total,
+  ROUND(AVG(f.total_spent), 2) AS ticket_medio
+FROM dw.fact_sales f
+JOIN dw.dim_date d ON (d.date_sk = f.date_sk)
+GROUP BY mes, nome_mes
+ORDER BY mes, nome_mes ASC;
+
 -- Enunciado 13 DIFÍCIL
 -- Escreva um bloco anônimo PL/pgSQL (DO), sem criar função nem procedimento, que produza
 -- um ranking de receita para cada uma das três dimensões pequenas do DW: item, payment e
@@ -22,41 +65,41 @@
 -- Para cada dimensão, a soma dos percentuais exibidos deve ser 100%, com diferença apenas
 -- de arredondamento.
 
-DO $$
-DECLARE
-  cur_receita REFCURSOR;
-  v_item VARCHAR(40);
-  v_payment VARCHAR(20);
-  v_location VARCHAR(40);
-  v_total_spent NUMERIC(8,2);
-  v_fact_sales VARCHAR(200) := 'dw.fact_sales';
-  v_posicao INTEGER := 0;
-BEGIN
-  -- SELECT SUM(total_spent) INTO v_total_spent FROM dw.fact_sales;
+-- DO $$
+-- DECLARE
+--   cur_receita REFCURSOR;
+--   v_item VARCHAR(40);
+--   v_payment VARCHAR(20);
+--   v_location VARCHAR(40);
+--   v_total_spent NUMERIC(8,2);
+--   v_fact_sales VARCHAR(200) := 'dw.fact_sales';
+--   v_posicao INTEGER := 0;
+-- BEGIN
+--   -- SELECT SUM(total_spent) INTO v_total_spent FROM dw.fact_sales;
 
-  OPEN cur_receita FOR EXECUTE
-    format
-    (
-      '
-      SELECT DISTINCT item, SUM(total_spent) AS receita_item
-      FROM %s f
-      INNER JOIN dw.dim_item i ON (f.item_sk = i.item_sk)
-      GROUP BY i.item
-      ORDER BY receita_item DESC;
-      '
-      ,
-      v_fact_sales
-    );
-  LOOP
+--   OPEN cur_receita FOR EXECUTE
+--     format
+--     (
+--       '
+--       SELECT DISTINCT item, SUM(total_spent) AS receita_item
+--       FROM %s f
+--       INNER JOIN dw.dim_item i ON (f.item_sk = i.item_sk)
+--       GROUP BY i.item
+--       ORDER BY receita_item DESC;
+--       '
+--       ,
+--       v_fact_sales
+--     );
+--   LOOP
 
-    FETCH cur_receita INTO v_item, v_total_spent;
-    EXIT WHEN NOT FOUND;
-    v_posicao := v_posicao +1;
-    RAISE NOTICE '% | % - %', v_item, v_posicao, v_total_spent;
-  END LOOP;
-  CLOSE cur_receita;
-END;
-$$
+--     FETCH cur_receita INTO v_item, v_total_spent;
+--     EXIT WHEN NOT FOUND;
+--     v_posicao := v_posicao +1;
+--     RAISE NOTICE '% | % - %', v_item, v_posicao, v_total_spent;
+--   END LOOP;
+--   CLOSE cur_receita;
+-- END;
+-- $$
 
 -- Enunciado 12 MÉDIO
 -- Crie dw.fact_sales conforme a Figura 4: transaction_nk como chave primária (dimensão

@@ -1,3 +1,63 @@
+-- Enunciado 13 DIFÍCIL
+-- Escreva um bloco anônimo PL/pgSQL (DO), sem criar função nem procedimento, que produza
+-- um ranking de receita para cada uma das três dimensões pequenas do DW: item, payment e
+-- location, nessa ordem, em uma única execução. Requisitos obrigatórios:
+-- a) deve existir um único cursor, não vinculado: declarado como REFCURSOR, sem consulta
+-- no DECLARE;
+-- b) o bloco percorre os nomes das três dimensões com um laço, à escolha do grupo, e, a cada
+-- volta, guarda o nome da dimensão da vez em uma variável;
+-- c) a cada volta, a consulta é dinâmica: um texto montado por concatenação com essa
+-- variável, que junta dw.fact_sales à tabela dw.dim_dimensão e devolve, para cada valor
+-- do atributo de mesmo nome, a quantidade de vendas e a receita (soma de total_spent),
+-- da maior para a menor receita;
+-- d) acada volta, o cursor é aberto com OPEN ... FOR EXECUTE, percorrido com FETCH em um
+-- LOOP, com saída por EXIT WHEN NOT FOUND, e fechado com CLOSE antes de ser reaberto
+-- com a consulta da dimensão seguinte;
+-- e) antes de percorrer as dimensões, o bloco calcula a receita total da fato; a cada
+-- linha lida, emite um RAISE NOTICE no formato <dimensão> | <posição>- <valor>:
+-- <vendas> vendas, receita <receita> (<percentual>% do total), com o percentual
+-- arredondado para duas casas;
+-- f) ao terminar cada dimensão, emite um RAISE NOTICE com a quantidade de linhas lidas
+-- naquela dimensão; ao terminar as três, emite um último com o total de linhas lidas.
+-- Para cada dimensão, a soma dos percentuais exibidos deve ser 100%, com diferença apenas
+-- de arredondamento.
+
+DO $$
+DECLARE
+  cur_receita REFCURSOR;
+  v_item VARCHAR(40);
+  v_payment VARCHAR(20);
+  v_location VARCHAR(40);
+  v_total_spent NUMERIC(8,2);
+  v_fact_sales VARCHAR(200) := 'dw.fact_sales';
+  v_posicao INTEGER := 0;
+BEGIN
+  -- SELECT SUM(total_spent) INTO v_total_spent FROM dw.fact_sales;
+
+  OPEN cur_receita FOR EXECUTE
+    format
+    (
+      '
+      SELECT DISTINCT item, SUM(total_spent) AS receita_item
+      FROM %s f
+      INNER JOIN dw.dim_item i ON (f.item_sk = i.item_sk)
+      GROUP BY i.item
+      ORDER BY receita_item DESC;
+      '
+      ,
+      v_fact_sales
+    );
+  LOOP
+
+    FETCH cur_receita INTO v_item, v_total_spent;
+    EXIT WHEN NOT FOUND;
+    v_posicao := v_posicao +1;
+    RAISE NOTICE '% | % - %', v_item, v_posicao, v_total_spent;
+  END LOOP;
+  CLOSE cur_receita;
+END;
+$$
+
 -- Enunciado 12 MÉDIO
 -- Crie dw.fact_sales conforme a Figura 4: transaction_nk como chave primária (dimensão
 -- degenerada), chaves estrangeiras NOT NULL para as quatro dimensões, métricas NOT NULL e
@@ -18,11 +78,12 @@
 -- SELECT * FROM dw.fact_sales;
 
 -- -- 12.3.1 Carregando a partir de staging.cafe_sales
+-- TRUNCATE TABLE dw.fact_sales;
 -- INSERT INTO dw.fact_sales(
 --   transaction_nk, date_sk, item_sk, payment_sk, location_sk, quantity, price_per_unit, total_spent
 -- )
 -- SELECT
---   s.transaction_id, CAST(TO_CHAR(s.transaction_date, 'YYYMMDD') AS INTEGER), di.item_sk, dp.payment_sk,
+--   s.transaction_id, CAST(TO_CHAR(s.transaction_date, 'YYYYMMDD') AS INTEGER), di.item_sk, dp.payment_sk,
 --   dl.location_sk, s.quantity, s.price_per_unit, s.total_spent
 -- FROM staging.cafe_sales s
 -- INNER JOIN dw.dim_item di ON (s.item = di.item)
@@ -39,7 +100,7 @@
 -- DROP TABLE IF EXISTS dw.fact_sales CASCADE;
 -- CREATE TABLE dw.fact_sales(
 --   transaction_nk VARCHAR(20) PRIMARY KEY,
---   date_sk INTEGER NOT NULL,
+--   date_sk INTEGER NOT NULL REFERENCES dw.dim_date(date_sk),
 --   item_sk INTEGER NOT NULL REFERENCES dw.dim_item(item_sk),
 --   payment_sk INTEGER NOT NULL REFERENCES dw.dim_payment(payment_sk),
 --   location_sk INTEGER NOT NULL REFERENCES dw.dim_location(location_sk),

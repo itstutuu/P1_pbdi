@@ -86,6 +86,15 @@ ORDER BY receita_4_trimestre DESC;
 -- JOIN dw.dim_date d ON (d.date_sk = f.date_sk)
 -- GROUP BY dia_semana, fim_de_semana
 -- ORDER BY receita DESC;
+-- SELECT
+--   d.day_of_week AS dia_semana,
+--   d.is_weekend AS fim_de_semana,
+--   COUNT(*) AS vendas,
+--   SUM(f.total_spent)::NUMERIC(12, 2) AS receita
+-- FROM dw.fact_sales f
+-- JOIN dw.dim_date d ON (d.date_sk = f.date_sk)
+-- GROUP BY dia_semana, fim_de_semana
+-- ORDER BY receita DESC;
 
 -- Enunciado 15 FÁCIL
 -- Mostre o ranking de itens: categoria, item, total de unidades vendidas e receita, da maior
@@ -100,11 +109,30 @@ ORDER BY receita_4_trimestre DESC;
 -- JOIN dw.dim_item i ON (f.item_sk = i.item_sk)
 -- GROUP BY category, item
 -- ORDER BY receita DESC;
+-- SELECT
+--   i.category AS categoria,
+--   i.item,
+--   COUNT(i.item) AS total_unidades_vendidas,
+--   SUM(f.total_spent) AS receita
+-- FROM dw.fact_sales f
+-- JOIN dw.dim_item i ON (f.item_sk = i.item_sk)
+-- GROUP BY category, item
+-- ORDER BY receita DESC;
 
 -- Enunciado 14 FÁCIL
 -- Mostre, para cada mês, o nome do mês, a quantidade de vendas, a receita e o 
 -- ticket médio (arredondado para duas casas), em ordem cronológica.
 
+-- SELECT 
+--   d.month AS mes,
+--   d.month_name AS nome_mes,
+--   COUNT(*) AS qtd_vendas,
+--   SUM(f.total_spent)::NUMERIC(12, 2) AS receita_total,
+--   ROUND(AVG(f.total_spent), 2) AS ticket_medio
+-- FROM dw.fact_sales f
+-- JOIN dw.dim_date d ON (d.date_sk = f.date_sk)
+-- GROUP BY mes, nome_mes
+-- ORDER BY mes, nome_mes ASC;
 -- SELECT 
 --   d.month AS mes,
 --   d.month_name AS nome_mes,
